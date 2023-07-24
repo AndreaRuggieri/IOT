@@ -7,6 +7,7 @@
 #include "dev/leds.h"
 #include "os/dev/button-hal.h"
 #include "coap-blocking-api.h"
+#include "res/res-heartbeat.h" // include the header file
 
 /* Log configuration */
 #include "sys/log.h"
@@ -66,10 +67,6 @@ void client_chunk_handler(coap_message_t *response)
   registered=true;
 }
 
-extern coap_resource_t  res_heartbeat; 
-
-
-
 PROCESS(med_process, "medprocess");
 AUTOSTART_PROCESSES(&med_process);
 
@@ -77,29 +74,24 @@ PROCESS_THREAD(med_process, ev, data)
 {
   PROCESS_BEGIN();
 
-  /*
-  leds_off(LEDS_RED);
-  leds_off(LEDS_GREEN);
-  leds_off(LEDS_YELLOW);
-  */
   printf("PROCESSO INIZIATO\n");
 
-    while(!registered)
-    {
-        // REGISTRATION--------------------------------------
-        // Populate the coap_endpoint_t data structure
-        coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_ep);
-        // Prepare the message
-        coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-        coap_set_header_uri_path(request, service_url);
-        // Set the payload 
-        const char msg[] = "{\"type\":\"med\"}";
-        coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
+  while(!registered)
+  {
+    // REGISTRATION--------------------------------------
+    // Populate the coap_endpoint_t data structure
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_ep);
+    // Prepare the message
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, service_url);
+    // Set the payload 
+    const char msg[] = "{\"type\":\"med\"}";
+    coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
 
-        COAP_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
+    COAP_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
 
-        // END REGISTRATION -------------------------------------------
-    }
+    // END REGISTRATION -------------------------------------------
+  }
 
   LOG_INFO("ATTUATORE MASCHERA ATTIVATO\n");
 
@@ -111,35 +103,4 @@ PROCESS_THREAD(med_process, ev, data)
   }
 
   PROCESS_END();
-
-  /*
-  button_hal_button_t *btn; 
-	
-  btn = button_hal_get_by_index(0);
-  printf("Device button count: %u.\n", button_hal_button_count);
-  if(btn) 
-  { 
-		printf("%s on pin %u with ID=0, Logic=%s, Pull=%s\n",
-		BUTTON_HAL_GET_DESCRIPTION(btn), btn->pin,
-		btn->negative_logic ? "Negative" : "Positive",
-		btn->pull == GPIO_HAL_PIN_CFG_PULL_UP ? "Pull Up" : "Pull Down");
-  }
-
-  while(1) 
-  {
-    PROCESS_WAIT_EVENT_UNTIL(ev==button_hal_press_event);
-    
-    if(ev == button_hal_press_event && (leds_get() & LEDS_RED))
-    {
-        //the red led showes danger and the button of the sensor is pressed
-        btn = (button_hal_button_t *)data;
-		printf("Press event");
-        printf("Button pressed while LED is red\n");
-        leds_set(LEDS_GREEN);
-            
-    }
-
-  }         
-  */             
-
 }
